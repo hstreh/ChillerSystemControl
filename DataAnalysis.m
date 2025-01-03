@@ -3,7 +3,6 @@ clear all;
 clc;
 close all;
 
-% read data and change collumn names
 data = readtable('ABSData3.csv');
 
 
@@ -18,7 +17,7 @@ newColumnNames = {'Time', 'deltaP_78', 'deltaP_14', 'deltaP_12', 'Tfw', 'ffw', .
 
 data.Properties.VariableNames = newColumnNames;
 
-%% Ensure the column is a cell array of strings % Convert 'Inactive' to 0 and 'Active' to 1
+%% Convert 'Inactive' to 0 and 'Active' to 1
 
 columnsToConvert = {'Chiller_1', 'Chiller_2', 'Valve_chiller1', 'Valve_chiller2'};
 for i = 1:length(columnsToConvert)
@@ -26,40 +25,37 @@ for i = 1:length(columnsToConvert)
     % Convert 'Inactive' to 0 and 'Active' to 1
     if iscell(data.(colName))
         data.(colName) = cellfun(@(x) strcmp(x, 'Active'), data.(colName));
-        % Convert logical array to numeric array: true (1) for Active, false (0) for Inactive
     else
         error('Column %s is not a cell array of strings.', colName);
     end
 end
-%% % Loop over the columns and check for '<null>' in each to remove data
+%%  Loop over the columns and check for '<null>' in each to remove data
 
-% % Loop over the columns and check for '<null>' in each to remove data
 
 rowsToRemove = false(height(data), 1);
 
-% Iterate over columns 1 to 44 only
+%1 to 44 only
 for col = 1:44
     if iscellstr(data{:, col}) || isstring(data{:, col}) || iscategorical(data{:, col})
         rowsToRemove = rowsToRemove | strcmp(data{:, col}, '<null>');
     end
 end
 
-% Remove rows marked for removal
+% Remove rows
 dataClean = data(~rowsToRemove, :);
 
-% Restrict NaN removal to first 44 columns
+% NaN removal to first 44 columns
 nanCheckCols = 1:44;
 nanRowsToRemove = any(ismissing(dataClean(:, nanCheckCols)), 2);
 dataClean = dataClean(~nanRowsToRemove, :);
-%% 
+%% Replace NaN values in column 46 with 0 for valve
 
 if width(dataClean) >= 46
-    % Replace NaN values in column 46 with 0
     dataClean{isnan(dataClean{:, 46}), 46} = 0;
 end
 
 
-%% Divide into seawater cooling and chiller unit cooling
+%% Divide into seawater cooling and chiller unit
 
 chiller = {'Chiller_1', 'Chiller_2'};
 
@@ -87,7 +83,7 @@ Tsw_PC = dataClean.Tsw_PC;
 Tfw_sp = dataClean.Tfw_sp;
 
 % Find rows where both Chiller_1 and Chiller_2 are 0
-chillersInactive = all(chillerData == 0, 2);  % Logical array for both chillers being 0
+chillersInactive = all(chillerData == 0, 2);
 
 % Find rows where Tfw_PCout is closer to Tfw than to Tout_chiller1 and Tout_chiller2
 closerToTfw = abs(Tfw_PCout - Tfw) < abs(Tfw_PCout - Tout_chiller1) & ...
@@ -99,7 +95,6 @@ TswCondition = (Tsw_PC <= (Tfw_sp));
 % Combine initial conditions
 initialRowsToRemove = chillersInactive & closerToTfw & TswCondition;
 
-% Subset the data by removing the identified rows
 ChillerUnitData2 = dataClean(~initialRowsToRemove, :);  % Keep rows that don't match the removal criteria
 seaWaterdata2 = dataClean(initialRowsToRemove, :);
 %% Transfer rows back to seaWaterdata2 if Valve_sw2 > 0
@@ -108,10 +103,8 @@ Valve_sw2 = ChillerUnitData2.Valve_sw2;
 % Find rows where Valve_sw2 > 0
 rowsToTransferBack = (Valve_sw2 > 0);
 
-% Extract rows to transfer back
 rowsToMove = ChillerUnitData2(rowsToTransferBack, :);
 
-% Remove these rows from ChillerUnitData2
 ChillerUnitData2 = ChillerUnitData2(~rowsToTransferBack, :);
 
 % Append the rows back to seaWaterdata2
@@ -123,11 +116,9 @@ seaWaterdata2 = sortrows(seaWaterdata2, 'Time'); % Replace 'TimeColumn' with the
 
 %% Delet data not used in Chiller
 
-
 % columns to modify
 columnsToModifyChiller1 = {'P1_suction', 'Tsw_chiller1', 'P1_discharge', 'Tout_chiller1','T_chiller1','Tsw_chiller1'};
 columnsToModifyChiller2 = {'P2_suction', 'Tsw_chiller2', 'P2_discharge', 'Tout_chiller2','T_chiller2','Tsw_chiller2'};
-
 
 columnsToCheckChiller1 = {'C_1', 'C_3', 'C_5', 'C_7'};
 columnsToCheckChiller2 = {'C_2', 'C_4', 'C_6', 'C_8'};
@@ -148,7 +139,6 @@ for i = 1:length(columnsToModifyChiller1)
     ChillerUnitData2{rowsToModifyExtendedChiller1, columnsToModifyChiller1{i}} = 0;
 end
 
-
 rowsToModifyExtendedChiller2 = [];
 for i = 1:length(rowsToModifyChiller2)
     rowsToModifyExtendedChiller2 = [rowsToModifyExtendedChiller2, rowsToModifyChiller2(i):min(rowsToModifyChiller2(i), height(ChillerUnitData2))];
@@ -159,45 +149,40 @@ rowsToModifyExtendedChiller2 = unique(rowsToModifyExtendedChiller2); % Ensure no
 for i = 1:length(columnsToModifyChiller2)
     ChillerUnitData2{rowsToModifyExtendedChiller2, columnsToModifyChiller2{i}} = 0;
 end
-%% 
+%% Convert to time interval and elapsed time
 
-% Assuming 'seawaterdata' is your table containing the 'Time' column
+seaWaterdata2.Time = datetime(seaWaterdata2.Time, 'InputFormat', 'dd/MM/yyyy HH:mm:ss.SSS');
 
-% Convert 'Time' to datetime if it's not already
-seaWaterdata2.Time = datetime(seaWaterdata2.Time, 'InputFormat', 'dd/MM/yyyy HH:mm:ss.SSS');  % Adjust the format if needed
+% Calculate the time differences between consecutive samples
+timeDifferences = diff(seaWaterdata2.Time);
 
-% Calculate the time differences between consecutive samples (in seconds)
-timeDifferences = diff(seaWaterdata2.Time);  % Time difference in datetime format
-
-% Convert the time differences to seconds
+% time differences to seconds
 intervals = seconds(timeDifferences);
 
-% Initialize a new column for the modified intervals
+% new column for the modified intervals
 modifiedIntervals = zeros(height(seaWaterdata2), 1);
 
 % Set the first interval to be zero (for the first data point)
 modifiedIntervals(1) = 0;
 
-% Loop through the intervals and apply the rule
+% For more than 15 days change the interval
 for i = 2:height(seaWaterdata2)
     if intervals(i-1) > 1296000  % 15 days in sec
-        modifiedIntervals(i) = 43200;  % Change the interval to 30 seconds
+        modifiedIntervals(i) = 43200; 
     else
         modifiedIntervals(i) = intervals(i-1);  % Use the actual time difference
     end
 end
 
-% Add the modified intervals as a new column in the table
 seaWaterdata2.interval = modifiedIntervals;
-%% 
-% Assuming 'seawaterdata' now has the 'interval' column
+%% Elapsed time
+
 % Initialize the elapsed time column
 elapsedTime = zeros(height(seaWaterdata2), 1);
 
-% Set the first row elapsed time to 0 (starting point)
+% Set the first row elapsed time to 0
 elapsedTime(1) = 0;
 
-% Loop through the rows and accumulate the intervals to create the elapsed time
 for i = 2:height(seaWaterdata2)
     elapsedTime(i) = elapsedTime(i-1) + seaWaterdata2.interval(i);
 end
@@ -237,7 +222,7 @@ summary(seaWaterdata2);
 %% 
 
 
-% Sample data (timestamps as strings)
+% Sample data
 timestamps = seaWaterdata2.Time;
 
 % Convert strings to datetime objects
