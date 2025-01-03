@@ -218,28 +218,3 @@ fprintf('Data saved to %s\n', filename2);
 data = readtable('PCdata.csv');
 
 summary(seaWaterdata2);
-
-%% 
-
-
-% Sample data
-timestamps = seaWaterdata2.Time;
-
-% Convert strings to datetime objects
-timestamps_dt = datetime(timestamps, 'InputFormat', 'dd/MM/yyyy HH:mm:ss.SSS');
-
-% Calculate the time differences between consecutive timestamps
-time_diffs = diff(timestamps_dt);
-
-% Calculate the mean time difference
-mean_time_diff = mean(time_diffs);
-
-% Display the mean time difference in seconds
-disp(['Mean sampling time (in seconds): ', num2str(seconds(mean_time_diff))]);
-%% 
-
-columsForTime = seaWaterdata2(:, {'elapsed_time','interval'}); 
-filename4 = 'TimeData.csv';
-writetable(columsForTime, filename4);
-fprintf('Data saved to %s\n', filename4);
-
