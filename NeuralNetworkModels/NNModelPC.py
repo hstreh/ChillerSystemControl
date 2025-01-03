@@ -37,7 +37,7 @@ X = ChillerData.drop(columns=['deltaP_78', 'deltaP_14', 'deltaP_12', 'Tfw', 'ffw
 # Split the data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Normalize the data (Standardization)
+# Normalize the data
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
@@ -78,6 +78,8 @@ print(f"Test MAE: {mae}")
 # Make predictions
 y_pred_nn = model.predict(X_test_scaled)
 
+
+# Plots
 plt.plot(history.history['loss'], label='train_loss')
 plt.plot(history.history['val_loss'], label='val_loss')
 plt.xlabel('Epoch')
@@ -86,8 +88,6 @@ plt.legend()
 plt.savefig('Loss_PC.png')
 plt.show()
 
-
-# Plot MAE (Mean Absolute Error) for training and validation
 plt.plot(history.history['mean_absolute_error'], label='train_MAE')
 plt.plot(history.history['val_mean_absolute_error'], label='val_MAE')
 plt.xlabel('Epoch')
@@ -110,7 +110,6 @@ r2_Tfw = r2_score(y_test['Tfw'], y_pred_nn[:, 3])
 mse_ffw = mean_squared_error(y_test['ffw'], y_pred_nn[:, 4])
 r2_ffw = r2_score(y_test['ffw'], y_pred_nn[:, 4])
 
-# Store the results in a dictionary
 resultsNN = {
     'MSE deltaP_78': mse_deltaP_78,
     'R2 deltaP_78': r2_deltaP_78,
@@ -129,7 +128,6 @@ print(resultsNN)
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Assuming y_test, y_pred_nn, mse_deltaP_78, etc., are already defined
 x = np.arange(len(y_test))
 
 plt.figure(figsize=(16, 9))
