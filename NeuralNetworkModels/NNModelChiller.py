@@ -124,8 +124,6 @@ resultsNN = {
 
 resultsNN
 print(resultsNN)
-import matplotlib.pyplot as plt
-import numpy as np
 
 x = np.arange(len(y_test))
 
