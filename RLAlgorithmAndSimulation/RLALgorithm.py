@@ -1,7 +1,7 @@
 import numpy as np
 import random
 import pandas as pd
-from SimulationTestSimpleNew import initialize_inputs, load_models_and_scalers, actions_to_control_inputs, simulate_step, set_Tsw_PC, set_Tsw_PC, save_data, plot_data
+from Simulation import initialize_inputs, load_models_and_scalers, actions_to_control_inputs, simulate_step, set_Tsw_PC, set_Tsw_PC, save_data, plot_data
 import warnings
 
 warnings.filterwarnings("ignore")
